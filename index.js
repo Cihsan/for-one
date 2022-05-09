@@ -72,20 +72,10 @@ async function run() {
 
         app.post('/add-product', async (req, res) => {
             const newPD = req.body
-            const getToken = req.headers.authorization;
-            const email = getToken.split(" ")[0]
-            const sToken = getToken.split(" ")[1]
-            const decoded = compareToken(sToken)
-            console.log(newPD);
-
-            if (email === decoded.email) {
-                const result = await goodsStore.insertOne(newPD);
-                const result1 = await myItemStore.insertOne(newPD);
-                res.send({ success: 'Added Product Successfully' })
-            }
-            else {
-                res.send({ success: 'UnAuthoraized Access' })
-            }
+            const result = await goodsStore.insertOne(newPD);
+            const result1 = await myItemStore.insertOne(newPD);
+            res.send({ success: 'Added Product Successfully' })
+            
         })
 
         //login
