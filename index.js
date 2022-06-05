@@ -12,18 +12,19 @@ app.get('/', (req, res) => {
     res.send('Welcome To Goods Store Server')
 })
 
-function compareToken(token) {
-    let email;
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: 'UnAuthorized access' });
+    }
+    const token = authHeader.split(' ')[1];
     jwt.verify(token, process.env.VALID_TOKEN, function (err, decoded) {
         if (err) {
-            email = 'Please Login'
+            return res.status(403).send({ message: 'Forbidden access' })
         }
-        if (decoded) {
-            console.log(decoded)
-            email = decoded
-        }
+        req.decoded = decoded;
+        next();
     });
-    return email;
 }
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.lnkho.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
@@ -34,13 +35,24 @@ async function run() {
         const goodsStore = client.db("goodsDB").collection("goods");
         const myItemStore = client.db("myItemDB").collection("myItems");
 
-        //get
-        app.get('/my-items', async (req, res) => {
+
+
+        //
+        /* app.get('/pathName', async (req, res) => {
             const query = {}
-            const cursor = myItemStore.find(query)
+            const cursor = collectionName.find(query)
             const result = await cursor.toArray()
             res.send(result)
-        })
+        }) */
+    
+        //
+        /* http://localhost:5000/my-items?email=email@mail.com */
+        app.get('/my-items', async (req, res) => {
+            const email = req.query.email;
+                const query = { email: email };
+                const result = await myItemStore.find(query).toArray()
+                return res.send(result);
+        });
         app.delete('/my-items/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: ObjectId(id) }
@@ -70,7 +82,7 @@ async function run() {
             res.send(result)
         })
 
-        app.post('/add-product', async (req, res) => {
+        app.post('/add-product', verifyJWT, async (req, res) => {
             const newPD = req.body
             const result = await goodsStore.insertOne(newPD);
             const result1 = await myItemStore.insertOne(newPD);
